@@ -1,6 +1,7 @@
 import HeaderUser from "../components/HeaderUser";
 import Drawinformation from "../components/Drawresult";
 import Lineselector from "../components/Lineselector";
+import Offerselector from "../components/Offerselector";
 import Linemessage from "../components/Linemessage";
 import Footer from "../components/Footer";
 import Lotterybuynow from "../components/Lotterybuynow";
@@ -37,8 +38,11 @@ export default function TicketSelector() {
   const location = useLocation();
   const usrname = localStorage.getItem("usrname");
   const [subltryid, setSubltryid] = useState("");
-  const [show, setShow] = useState(true);
-  const [isfinishd, setisfinished] = useState(false);
+  const [show, setShow] = useState(false);
+  //const [isfinishd, setisfinished] = useState(false);
+  const isfinishd = useSelector((state) => state.issubidexist);
+  console.log("isfinished",isfinishd)
+
   var linenum = 3;
   var temp = [];
   // useEffect(()=>{
@@ -72,29 +76,26 @@ export default function TicketSelector() {
     dispatch({ type: "setLineArray", payload: temp });
     console.log("linearray" + JSON.stringify(linearray));
 
-    if (subltryid != "") 
-    {
-      alert(subltryid)
-      let temp_offer = [...offerarray];
+    console.log("sublotryid=>" + isfinishd);
+    if (isfinishd) {
+      
       let t_offer = [];
 
-      if (temp_offer.length == 0) {
-        for (var i = 0; i < linenum; i++) {
-          var offerarray = [];
-          for (let j = 1; j <= 39; j++) {
-            let offerobj = { value: j, isselected: false };
-            offerarray.push(offerobj);
-          }
-          temp_offer.push(offerarray);
+      for (var i = 0; i < linenum; i++) {
+        var offerarray = [];
+        for (let j = 1; j <= 39; j++) {
+          let offerobj = { value: j, isselected: false };
+          offerarray.push(offerobj);
         }
+        t_offer.push(offerarray);
       }
-      setisfinished(false);
-      dispatch({ type: "setOfferArray", payload: temp });
-    } 
-   
+      //setisfinished(false);
+      dispatch({ type: "setOfferArray", payload: t_offer });
+    }
+
     console.log("offerary" + JSON.stringify(offerarray));
 
-    let url = "http://localhost:8080/drawticket";
+    let url = "http://localhost:8000/drawticket";
     let request = {};
     let header = {};
     axios
@@ -114,13 +115,13 @@ export default function TicketSelector() {
       console.log("location.state", location.state.lotterydetails);
       setLotterylist(location.state.lotterydetails);
     } else {
-      let url = "http://localhost:8080/ticketselector_lotteryfetch";
+      let url = "http://localhost:8000/ticketselector_lotteryfetch";
       let header = {};
       let request = {};
       axios
         .post(url, request, header)
         .then((res) => {
-          console.log("list", res.data);
+          // console.log("list", res.data);
           // setDetails(res.data)
           setLotterylist(res.data);
         })
@@ -131,12 +132,11 @@ export default function TicketSelector() {
     navigate("/");
   };
   const chkout = (id) => {
-    if(usrname=="")
-    {
-      navigate("/Login")
+    if (usrname == "") {
+      navigate("/Login");
     }
     console.log("selected id", id);
-    let url = "http://localhost:8080/insertunit";
+    let url = "http://localhost:8000/insertunit";
     let header = {};
 
     const valu = [];
@@ -152,31 +152,66 @@ export default function TicketSelector() {
       if (valu[i] != "") {
         let request = { uid: 2, lid: id, arr: valu[i] };
 
+        // console.log(request);
+        axios
+          .post(url, request, header)
+          .then((res) => {
+            console.log(res.data);
+            if (res.data != "Error") {
+              if (!isfinishd) {
+                console.log("isfinished", isfinishd);
+                dispatch({ type: "setLineArray", payload: [] });
+               navigate("/Checkout", {
+                  state: { lid: lotteryid, subltryid: subltryid },
+                });
+              } else {
+                setShow(!show);
+
+                dispatch({ type: "issubidexist", payload: false });
+              }
+             
+            }
+          })
+          .catch();
+      }
+    }
+    // }
+  };
+  const offerchkout = () => {
+    let url = "http://localhost:8000/insertunit";
+    let header = {};
+
+    const valu = [];
+    const temp = [...offerarray];
+    for (const itrt of temp) {
+      let temp = [];
+      for (const t of itrt) {
+        if (t.isselected) temp.push(t.value);
+      }
+      valu.push(temp);
+    }
+    for (var i = 0; i < valu.length; i++) {
+      if (valu[i] != "") {
+        let request = { uid: 2, lid: subltryid, arr: valu[i] };
+
         console.log(request);
         axios
           .post(url, request, header)
           .then((res) => {
             console.log(res.data);
-            if (res.data != "Error") 
-            {
-              if (isfinishd == true) {
-                console.log("isfinished",isfinishd)
-                // dispatch({ type: "setLineArray", payload: [] });
-                // dispatch({ type: "setOfferarray", payload: [] });
-                navigate("/Checkout", {
-                  state: { lid: lotteryid, subltryid: subltryid },
-                });
-              } else {
-                
-                setShow(!show);
-                setisfinished(true);
-              }
+            if (res.data != "Error") {
+              navigate("/Checkout", {
+                state: { lid: lotteryid, subltryid: subltryid },
+              });
+
+              setShow(!show);
+
+              dispatch({ type: "issubidexist", payload: false });
             }
           })
           .catch();
-      } 
+      }
     }
-    // }
   };
 
   const childdata = (e, selection, setShowchk) => {
@@ -186,7 +221,7 @@ export default function TicketSelector() {
     if (selection.length < 5) {
       setErrmsg("Need to select 5 numbers before confirming!!");
     } else if (selection != "") {
-      let url = "http://localhost:8080/insertunit";
+      let url = "http://localhost:8000/insertunit";
       let request = {
         firstnum: selection[0],
         secondnum: selection[1],
@@ -213,7 +248,7 @@ export default function TicketSelector() {
     setltryid(obj.id);
     setLtryname(obj.value);
 
-    let url = "http://localhost:8080/subltryfetch";
+    let url = "http://localhost:8000/subltryfetch";
     let req = { id: obj.id };
     console.log("req", req);
     let header = {};
@@ -234,10 +269,8 @@ export default function TicketSelector() {
       navigate("/AdminDashboard");
     } else if (localStorage.getItem("role") == 2) {
       navigate("/UserPage");
-    }
-    else if(localStorage.getItem("role")=="")
-    {
-      navigate("/")
+    } else if (localStorage.getItem("role") == "") {
+      navigate("/");
     }
   };
   return (
@@ -253,8 +286,8 @@ export default function TicketSelector() {
           label7click={label7click}
         />
         {/* <Drawinformation/> */}
-        {show ? (
-          <div className="ticketslector_lotterybuynow">
+        
+         {!show ? (<div className="ticketslector_lotterybuynow">
             <Lotterybuynow
               details={lotterydetails}
               deadline={maindate}
@@ -267,9 +300,9 @@ export default function TicketSelector() {
               variable4={"drawdate"}
               variable5={"sub_ltry"}
             />
-          </div>
-        ) : (
-          <div className="ticketslector_lotterybuynow">
+          </div>):
+       
+        (<div className="ticketslector_lotterybuynow">
             <Lotterybuynow
               details={lotterydetails}
               deadline={subdate}
@@ -282,8 +315,8 @@ export default function TicketSelector() {
               variable4={"sub_drawdate"}
               variable5={"sub_ltry"}
             />
-          </div>
-        )}
+          </div>)}
+        
         {/* <div className="ticketselector_lotteryname">
           <label> Lottery Name : </label>
 
@@ -321,66 +354,66 @@ export default function TicketSelector() {
           </>
          })}
         </div> */}
-        {show ? (
-          <div>
-            <div className="ticketselector_line">
-              {linearray.map((item, index) => {
-                return (
-                  <>
-                    <Lineselector
-                      label1={"Unit" + index}
-                      setValue={setValue}
-                      childdata={childdata}
-                      lineindex={index}
-                      ltryid={ltryid}
-                      show={show}
-                      array={linearray}
-                      text={"linearray"}
-                    />
-                  </>
-                );
-              })}
-            </div>
-            <Linemessage />
-            <div className="ticketselector_chkoutbtn">
-              <Checkoutbutton
-                value2={"Checkout"}
-                chkout={() => chkout(lotteryid)}
-                linenum={linenum}
-              />
-            </div>
+        {!show ? (<div>
+          <div className="ticketselector_line">
+            {linearray.map((item, index) => {
+              return (
+                <>
+                  <Lineselector
+                    label1={"Unit" + index}
+                    setValue={setValue}
+                    childdata={childdata}
+                    lineindex={index}
+                    ltryid={ltryid}
+                    show={!show}
+                    array={linearray}
+                    text={"linearray"}
+                  />
+                </>
+              );
+            })}
           </div>
-        ) : (
-          <div>
-            <div className="ticketselector_line">
-              {offerarray.map((itm, indx) => {
-                return (
-                  <>
-                    <Lineselector
-                      label1={"Unit" + indx}
-                      setValue={setValue}
-                      childdata={childdata}
-                      lineindex={indx}
-                      ltryid={ltryid}
-                      show={!show}
-                      array={offerarray}
-                      text={"offerarray"}
-                    />
-                  </>
-                );
-              })}
-            </div>
-            <Linemessage />
-            <div className="ticketselector_chkoutbtn">
-              <Checkoutbutton
-                value2={"Checkout"}
-                chkout={() => chkout(subltryid)}
-                linenum={linenum}
-                id={subltryid}
-              />
-            </div>
+          <Linemessage />
+          <div className="ticketselector_chkoutbtn">
+            <Checkoutbutton
+              value2={"Checkout"}
+              chkout={() => chkout(lotteryid)}
+              linenum={linenum}
+            />
           </div>
-        )}
+        </div>):
+
+       (<div>
+          <div className="ticketselector_line">
+            {offerarray.map((item, index) => {
+              return (
+                <>
+                  <Offerselector
+                    label1={"Unit" + index}
+                    setValue={setValue}
+                    childdata={childdata}
+                    lineindex={index}
+                    ltryid={ltryid}
+                    show={show}
+                    array={linearray}
+                    text={"linearray"}
+                  />
+                </>
+              );
+            })}
+             </div>
+             <Linemessage />
+             <div className="ticketselector_chkoutbtn">
+            <Checkoutbutton
+              value2={"Checkout"}
+              chkout={() => offerchkout(subltryid)}
+              linenum={linenum}
+            />
+          </div>
+         
+         
+         
+        </div>)}
 
         <div className="Ticketslector_errmsg">{err}</div>
 

@@ -12,7 +12,8 @@ const initialState = {
   linearray: [],
   offerarray:[],
   ltryid:"",
-  ltryname:""
+  ltryname:"", 
+  issubidexist:false
 };
 
 function todoReducer(prevState=initialState, action) {
@@ -32,6 +33,8 @@ function todoReducer(prevState=initialState, action) {
         // case "setLtryname":
         //   return { ...prevState, ltryname: action.payload };
         //   break;
+        case "issubidexist":
+          return {...prevState, issubidexist:action.payload}
     default:
       return prevState;
   }

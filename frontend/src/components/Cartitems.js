@@ -32,7 +32,7 @@ export default function Cartitems({label1,array}) {
     // }
     //  dispatch({ type: "setLineArray", payload: tempsel });
     
-    let url = "http://localhost:8080/unitdelete";
+    let url = "http://localhost:8000/unitdelete";
     let request = { id: id };
     let header = {};
     axios

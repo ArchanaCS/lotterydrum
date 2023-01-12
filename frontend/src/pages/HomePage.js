@@ -10,9 +10,8 @@ import { useState } from "react";
 import axios from "axios";
 import { useEffect } from "react";
 import Timer from "../components/Timer";
-import { useDispatch,useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import TicketSelector from "./TicketSelector";
-
 
 function HomePage() {
   const navigate = useNavigate();
@@ -22,53 +21,58 @@ function HomePage() {
   const [lotteryid, setLotteryid] = useState("");
   const [count, setCount] = useState("");
   var uname = localStorage.getItem("uname");
-  const userid=localStorage.getItem("userid")
-  const [lotterydetails,setLotterydetails]=useState([])
-  console.log(userid)
+  const userid = localStorage.getItem("userid");
+  const [lotterydetails, setLotterydetails] = useState([]);
+  console.log(userid);
   // const ltryid = useSelector((state) => state.ltryid);
   const dispatch = useDispatch();
   useEffect(() => {
-    let url = "http://localhost:8080/drawticket";
+    let url = "http://localhost:8000/drawticket";
     let request = {};
     let header = {};
     axios
       .post(url, request, header)
       .then((res) => {
-        console.log("draw",res.data);
+        console.log("draw", res.data);
         setDate(res.data[0].drawdate);
         setLotteryname(res.data[0].txtLotteryname);
         setPrize(res.data[0].txtLotteryprize);
         setLotteryid(res.data[0].id);
         setLotterydetails(res.data);
+        var t = false;
+        for (const iterator of res.data) {
+          if (iterator.sub_id != null) {
+            console.log("itrt_sub_id",iterator.sub_id)
+            t = true;
+            dispatch({ type: "issubidexist", payload: t });
+          }
+        }
+        // dispatch({ type: "issubidexist", payload: t });
       })
       .catch();
 
-
-      let url_cart="http://localhost:8080/header_countunit"
-      let header_cart={};
-      let request_cart={id:userid};
-      axios.post(url_cart,request_cart,header_cart).then((res)=>{
-        console.log(res.data[0].count)
-        if(userid=""){
-          setCount(0)
-          localStorage.setItem("cartcount",count)
+    let url_cart = "http://localhost:8000/header_countunit";
+    let header_cart = {};
+    let request_cart = { id: userid };
+    axios
+      .post(url_cart, request_cart, header_cart)
+      .then((res) => {
+        console.log(res.data[0].count);
+        if ((userid = "")) {
+          setCount(0);
+          localStorage.setItem("cartcount", count);
+        } else {
+          setCount(res.data[0].count);
+          localStorage.setItem("cartcount", count);
         }
-        else
-        {
-          setCount(res.data[0].count)
-          localStorage.setItem("cartcount",count)
-        }
-        
-      }).catch()
-
+      })
+      .catch();
   }, []);
 
-  const buynowclick = (e) => {
-   
-  };
+  const buynowclick = (e) => {};
   const registerclick = (e) => {};
   const label6click = (e) => {
-    navigate("/TicketSelector", { state: {lotterydetails:lotterydetails } });
+    navigate("/TicketSelector", { state: { lotterydetails: lotterydetails } });
   };
   const label7click = () => {
     navigate("/Login");
@@ -77,16 +81,14 @@ function HomePage() {
     navigate("/Signup");
   };
   const ticketPurchase = () => {
-    console.log("lotterydetails",lotterydetails)
-   
-      navigate("/TicketSelector", { state: {lotterydetails:lotterydetails } });
+    console.log("lotterydetails", lotterydetails);
 
+    navigate("/TicketSelector", { state: { lotterydetails: lotterydetails } });
   };
   return (
     <div className="lottery_outer">
       <div className="lottery_headerUser">
         <HeaderUser
-      
           label1={"Guest"}
           label2={count}
           label3={"Cart"}
@@ -126,11 +128,9 @@ function HomePage() {
         <Animation />
       </div>
       <div className="lottery_option">
-     
         <Option />
       </div>
       <div className="lottery_footer">
-       
         <Footer />
       </div>
     </div>
